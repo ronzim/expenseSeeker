@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 # - should run once a day
 # - generate a png instead of html
 # - fix titles dimensions
+# - deploy system
 
 
 SEND_CHAT = True
@@ -123,8 +124,8 @@ if CREATE_GRAPH:
     fig = pl.Figure(data=pl.Bar(
         x=list(expenses[current_month].keys()), y=list(expenses[current_month].values())),
         layout_title_text="Month: " + str(current_month) + " : " + str(monthly_sum) + " €")
-    # fig.write_html('graph.html', auto_open=True)
-    file_name = str(current_month) + "_expenses"
+    fig.write_html('graph.html', auto_open=True)
+    # file_name = str(current_month) + "_expenses"
     # fig.write_image("images/" + file_name + ".png")
 
 if SEND_CHAT:
