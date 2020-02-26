@@ -18,10 +18,10 @@ from datetime import datetime, timezone
 # - deploy system
 
 
-SEND_CHAT = True
+SEND_CHAT = False
 CREATE_GRAPH = True
-
 expenses = [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
+tot = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 
 def get_month(date):
@@ -63,7 +63,6 @@ if __name__ == '__main__':
     for dialog in client.get_dialogs(limit=10):
         print('>>> getting dialog', dialog.name)
     # client.disconnect()
-    print(' ### DONE ### ')
 
     # write into csv
     with open('expenses.csv', mode='w+') as out_file:
@@ -80,9 +79,13 @@ if __name__ == '__main__':
 
             msg = raw_msg.message.split(' ')
             n += 1
-            print(n, '-', msg)
+            # print(n, '-', msg)
             correct_date = utc_to_local(raw_msg.date).strftime('%x')
             correct_time = utc_to_local(raw_msg.date).strftime('%X')
+
+            # if not current year stop parsing
+            if (raw_msg.date.year < date.today().year):
+                break
 
             if len(msg) < 2 or not msg[0].isdigit():
                 continue
@@ -98,31 +101,30 @@ if __name__ == '__main__':
             if len(msg) > 2:
                 mod = msg[2]
 
-            print(type, value)
+            # print(type, value)
             add_expense(type, value, correct_date)
-
-    print('\n ---- PARTIAL ----')
-    tot = 0
 
     for month in range(0, 12):
         month_exp = expenses[month]
+        print('>>> ', month)
         for item in month_exp:
             out_msg = item + ' : ' + str(month_exp[item])
             # if SEND_CHAT:
             #     client.send_message("Spese", out_msg)
-            tot += month_exp[item]
-
-    print('\n ---- TOTAL ----')
-    print(tot, '€')
-    out_msg = 'total: ' + str(tot)
+            tot[month] += month_exp[item]
+        print(tot[month])
 
     today = date.today()
     current_month = int(today.strftime("%m"))-1
 
 if CREATE_GRAPH:
     monthly_sum = sum(expenses[current_month].values())
-    fig = pl.Figure(data=pl.Bar(
-        x=list(expenses[current_month].keys()), y=list(expenses[current_month].values())),
+    fig = pl.Figure(data=[
+        pl.Bar(name=current_month-1, x=list(expenses[current_month-1].keys()), y=list(
+            expenses[current_month-1].values())),
+        pl.Bar(name=current_month, x=list(expenses[current_month].keys()), y=list(
+            expenses[current_month].values()))
+    ],
         layout_title_text="Month: " + str(current_month) + " : " + str(monthly_sum) + " €")
     fig.write_html('graph.html', auto_open=True)
     # file_name = str(current_month) + "_expenses"
@@ -131,3 +133,5 @@ if CREATE_GRAPH:
 if SEND_CHAT:
     # client.send_message("Spese", file='images/graph.png')
     client.send_message("Spese", file='graph.html')
+
+print(' ### DONE ### ')
