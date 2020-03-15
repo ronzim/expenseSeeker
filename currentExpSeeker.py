@@ -1,6 +1,8 @@
+# This script read a chat on telegram and groups expenses (msg in the form {number string} ) by category and month
+
 from __future__ import unicode_literals
+from expUtils import get_month, add_expense, utc_to_local, load_codes, plot_data
 import csv
-import json
 from datetime import date
 from telethon import TelegramClient, sync
 from telethon import utils
@@ -8,8 +10,10 @@ from telethon import events
 import sys
 import os
 import csv
-import plotly.graph_objects as pl
-from datetime import datetime, timezone
+
+import locale
+locale.setlocale(locale.LC_TIME, "it_IT")  # swedish
+
 
 # TODO list
 # - should run once a day
@@ -24,31 +28,6 @@ expenses = [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
 tot = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 
-def get_month(date):
-    return int(date.split('/')[0])
-
-
-def add_expense(type, val, date):
-    month_n = get_month(date)
-    if type in list(expenses[month_n-1].keys()):
-        expenses[month_n-1][type] += val
-        new = False
-    else:
-        expenses[month_n-1][type] = val
-        new = True
-    return new
-
-
-def utc_to_local(utc_dt):
-    return utc_dt.replace(tzinfo=timezone.utc).astimezone(tz=None)
-
-
-def load_codes():
-    with open('codes.json', 'r') as f:
-        codes = json.load(f)
-    return codes
-
-
 if __name__ == '__main__':
 
     # telegram app ids
@@ -60,11 +39,12 @@ if __name__ == '__main__':
 
     # client.disconnect()
 
+    # GET ALL DIALOGS
     for dialog in client.get_dialogs(limit=10):
         print('>>> getting dialog', dialog.name)
     # client.disconnect()
 
-    # write into csv
+    # WRITE HEADERS IN CSV
     with open('expenses.csv', mode='w+') as out_file:
         csv_writer = csv.writer(out_file, delimiter=',',
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -73,7 +53,7 @@ if __name__ == '__main__':
 
     n = 0
 
-    # iter on all messages
+    # ITER ON ALL MESSAGES & SUM ON CATEGORY
     for raw_msg in client.iter_messages('Spese'):  # no limits!
         if raw_msg is not None and raw_msg.message is not None:
 
@@ -83,13 +63,13 @@ if __name__ == '__main__':
             correct_date = utc_to_local(raw_msg.date).strftime('%x')
             correct_time = utc_to_local(raw_msg.date).strftime('%X')
 
-            # if not current year stop parsing
+            # if not current year stop return
             if (raw_msg.date.year < date.today().year):
                 break
-
+            # sanity check
             if len(msg) < 2 or not msg[0].isdigit():
                 continue
-
+            # write row in csv
             with open('expenses.csv', mode='a+') as out_file:
                 csv_writer = csv.writer(
                     out_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
@@ -101,9 +81,9 @@ if __name__ == '__main__':
             if len(msg) > 2:
                 mod = msg[2]
 
-            # print(type, value)
-            add_expense(type, value, correct_date)
+            add_expense(type, value, correct_date, expenses)
 
+    # SUM FROM MONTHS
     for month in range(0, 12):
         month_exp = expenses[month]
         print('>>> ', month)
@@ -114,22 +94,12 @@ if __name__ == '__main__':
             tot[month] += month_exp[item]
         print(tot[month])
 
-    today = date.today()
-    current_month = int(today.strftime("%m"))-1
 
+# PLOT DATA
 if CREATE_GRAPH:
-    monthly_sum = sum(expenses[current_month].values())
-    fig = pl.Figure(data=[
-        pl.Bar(name=current_month-1, x=list(expenses[current_month-1].keys()), y=list(
-            expenses[current_month-1].values())),
-        pl.Bar(name=current_month, x=list(expenses[current_month].keys()), y=list(
-            expenses[current_month].values()))
-    ],
-        layout_title_text="Month: " + str(current_month) + " : " + str(monthly_sum) + " €")
-    fig.write_html('graph.html', auto_open=True)
-    # file_name = str(current_month) + "_expenses"
-    # fig.write_image("images/" + file_name + ".png")
+    plot_data(expenses)
 
+# SEND PLOT TO CHAT
 if SEND_CHAT:
     # client.send_message("Spese", file='images/graph.png')
     client.send_message("Spese", file='graph.html')
