@@ -30,17 +30,12 @@ def load_codes():
 
 def plot_data(expenses):
     today = date.today()
-    current_month = int(today.strftime("%m"))-1
-    monthly_sum = sum(expenses[current_month].values())
-    fig = pl.Figure(data=[
-        pl.Bar(name=current_month-2, x=list(expenses[current_month-2].keys()), y=list(
-                    expenses[current_month-2].values())),
-        pl.Bar(name=current_month-1, x=list(expenses[current_month-1].keys()), y=list(
-            expenses[current_month-1].values())),
-        pl.Bar(name=current_month, x=list(expenses[current_month].keys()), y=list(
-            expenses[current_month].values()))
-    ],
-        layout_title_text="Month: " + str(current_month) + " : " + str(monthly_sum) + " €")
+    data = []
+    # add months data
+    for month in range(0, 12):
+        bar = pl.Bar(name=month, x=list(expenses[month].keys()), y=list(
+            expenses[month].values()))
+        data.append(bar)
+
+    fig = pl.Figure(data)
     fig.write_html('graph.html', auto_open=True)
-    # file_name = str(current_month) + "_expenses"
-    # fig.write_image("images/" + file_name + ".png")

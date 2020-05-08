@@ -9,7 +9,6 @@ tot = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 
 def parse_row(row):
-    # TODO if row[2] contains "," remove it before casting to float
     tag = 0
     descr = row[4].lower()
     if "enel" in descr:
@@ -33,6 +32,7 @@ def parse_row(row):
     elif "mutuo" in descr:
         tag = "mutuo"
 
+    row[2] = row[2].replace(',', '')
     val = -float(row[2])
     return tag, val
 
