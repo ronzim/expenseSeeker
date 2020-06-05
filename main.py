@@ -30,6 +30,10 @@ def parse_row(row):
         tag = "bollette"
     elif "a2a spa" in descr:
         tag = "bollette"
+    elif "condominio" in descr:
+        tag = "condominio"
+    elif "bonifica" in descr:
+        tag = "bollette"
     elif "7873" in descr:
         tag = "prepagata"
     elif "findomestic" in descr:
@@ -50,10 +54,10 @@ def parse_row(row):
         tag = "nexi"
     elif "pagam. diversi" in descr:
         tag = "vodafone?"
-    elif ("bancomat" in descr) or ("pag.pos" in descr):
-        tag = "pag.bancomat"
     elif ("prel.bancomat" in descr) or ("prel.sport" in descr):
         tag = "prelievi"
+    elif ("bancomat" in descr) or ("pag.pos" in descr):
+        tag = "pag.bancomat"
     elif val > 0:
         tag = "entrate"
     else:
